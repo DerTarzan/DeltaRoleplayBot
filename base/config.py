@@ -74,8 +74,16 @@ class BotConfig(BotConfigHandler):
         return int(self._get_env_var("RULES_CHANNEL_ID"))
 
     @property
+    def TICKET_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("TICKET_CHANNEL_ID"))
+
+    @property
     def SUPPORT_WAITING_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("SUPPORT_WAITING_CHANNEL_ID"))
+
+    @property
+    def DELTA_TEAM_ROLE_ID(self) -> int:
+        return int(self._get_env_var("DELTA_TEAM_ROLE_ID"))
 
     @property
     def EINWOHNER_ROLE_ID(self) -> int:

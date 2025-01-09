@@ -157,3 +157,129 @@ class Database(DatabaseConnectionHandler):
                 except aiosqlite.Error as e:
                     self.db_logger.error("Error removing user from database", exc_info=e)
 
+    async def add_ticket(self, uuid: str, user_id: int, category: str, channel_id: int, guild_id: int) -> None:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        INSERT INTO tickets (uuid, user_id, category, channel_id, guild_id)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (uuid, user_id, category, channel_id, guild_id)
+                    )
+                    await connection.commit()
+                    self.db_logger.debug(f"Ticket {uuid} added to database")
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error adding ticket to database", exc_info=e)
+
+    async def get_ticket(self, uuid: str) -> Optional[Tuple[str, int, str, int, int]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE uuid = ?
+                        """,
+                        (uuid,)
+                    )
+                    ticket = await cursor.fetchone()
+                    return ticket
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting ticket from database", exc_info=e)
+                    return None
+
+    async def check_ticket(self, uuid: str) -> bool:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE uuid = ?
+                        """,
+                        (uuid,)
+                    )
+                    ticket = await cursor.fetchone()
+                    return True if ticket else False
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error checking ticket in database", exc_info=e)
+                    return False
+
+    async def remove_ticket(self, uuid: str) -> None:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        DELETE FROM tickets WHERE uuid = ?
+                        """,
+                        (uuid,)
+                    )
+                    await connection.commit()
+                    self.db_logger.debug(f"Ticket {uuid} removed from database")
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error removing ticket from database", exc_info=e)
+
+    async def get_tickets(self, user_id: int) -> List[Tuple[str, int, str, int, int]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE user_id = ?
+                        """,
+                        (user_id,)
+                    )
+                    tickets = await cursor.fetchall()
+                    return tickets
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting tickets from database", exc_info=e)
+                    return []
+
+    async def get_tickets_by_category(self, category: str) -> List[Tuple[str, int, str, int, int]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE category = ?
+                        """,
+                        (category,)
+                    )
+                    tickets = await cursor.fetchall()
+                    return tickets
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting tickets from database", exc_info=e)
+                    return []
+
+    async def get_tickets_by_guild(self, guild_id: int) -> List[Tuple[str, int, str, int, int]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE guild_id = ?
+                        """,
+                        (guild_id,)
+                    )
+                    tickets = await cursor.fetchall()
+                    return tickets
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting tickets from database", exc_info=e)
+                    return []
+
+    async def get_ticket_by_channel_id(self, channel_id: int) -> Optional[Tuple[str, int, str, int, int]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM tickets WHERE channel_id = ?
+                        """,
+                        (channel_id,)
+                    )
+                    ticket = await cursor.fetchone()
+                    return ticket
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting ticket from database", exc_info=e)
+                    return None
