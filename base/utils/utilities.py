@@ -39,6 +39,10 @@ class Utilities:
         if (datetime.strptime(current_date, "%Y-%m-%d") - datetime.strptime(member_date, "%Y-%m-%d")).days < 7 and not member.bot:
             return False
 
+    def check_user_has_role(self, member: discord.Member, role_id: int) -> bool:
+        self.logger.debug(f"Checking if user {member.name} has role {role_id}")
+        return any(role.id == role_id for role in member.roles)
+
     def check_server_status(self) -> bool | str:
         url = self.config.SERVER_INFO_URL
         try:
@@ -128,5 +132,65 @@ class Utilities:
             next_restart = restart_datetime
         return next_restart.strftime("%H:%M")
 
+    @staticmethod
+    async def transcript(interaction: discord.Interaction, bot: discord.Bot) -> str:
+        transcript_filename = f"{interaction.channel.id}.md"
+
+        # Check if a transcript is already being generated
+        if os.path.exists(transcript_filename):
+            return await interaction.followup.send(f"A transcript is already being generated!", ephemeral=True)
+
+        # Open the file for writing the transcript
+        with open(transcript_filename, 'a') as f:
+            f.write(f"# Transcript of {interaction.channel.name}:\n")
+
+            # Iterate through the channel's message history
+            async for message in interaction.channel.history(limit=None, oldest_first=True):
+                created = datetime.strftime(message.created_at, "%m/%d/%Y at %H:%M:%S")
+
+                # Handle edited messages
+                if message.edited_at:
+                    edited = datetime.strftime(message.edited_at, "%m/%d/%Y at %H:%M:%S")
+                    f.write(f"{message.author} on {created}: {message.clean_content} (Edited at {edited})\n")
+                else:
+                    f.write(f"{message.author} on {created}: {message.clean_content}\n")
+
+                # Check if the message has attachments (files or images)
+                if message.attachments:
+                    for attachment in message.attachments:
+                        # Check if the attachment is an image or a file
+                        if attachment.content_type and attachment.content_type.startswith("image/"):
+                            f.write(f"  - Image: [Download {attachment.filename}]({attachment.url})\n")
+                        else:
+                            f.write(f"  - File: [Download {attachment.filename}]({attachment.url})\n")
+
+            # Add generation information to the transcript
+            generated = datetime.now().strftime("%m/%d/%Y at %H:%M:%S")
+            f.write(f"\n*Generated at {generated} by {bot.user}*\n*Date Formatting: MM/DD/YY*\n*Time Zone: UTC*")
+
+        # Send the transcript as a file to the user
+        with open(transcript_filename, 'rb') as f:
+            await interaction.followup.send(file=discord.File(f, f"{interaction.channel.name}.md"), ephemeral=True)
+
+        # Remove the transcript file after sending it
+        os.remove(transcript_filename)
 
 
+    def ticket_takeover_permission(self, interaction: discord.Interaction, ticket_user: discord.Member) -> dict:
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.guild.get_role(self.config.DELTA_TEAM_ROLE_ID): discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True,
+                                                          read_message_history=True, attach_files=True, manage_messages=True),
+
+            ticket_user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True, read_message_history=True, attach_files=True)
+        }
+        return overwrites
+
+    def ticket_permission(self, interaction: discord.Interaction) -> dict:
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.guild.get_role(self.config.DELTA_TEAM_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True, read_message_history=True, manage_messages=True),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True, read_message_history=True, attach_files=True)
+        }
+        return overwrites

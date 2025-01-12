@@ -17,7 +17,7 @@ class TicketSystem(commands.Cog):
     async def on_ready(self):
         channel = self.bot.get_channel(self.config.TICKET_CHANNEL_ID)
         await channel.purge(limit=1)
-        await channel.send(embed=EmbedTicket().ticket_embed(channel.guild, channel.guild.get_role(self.config.DELTA_TEAM_ROLE_ID), channel.guild.icon.url), view=TicketView())
+        await channel.send(embed=EmbedTicket().ticket_embed(channel.guild, channel.guild.get_role(self.config.DELTA_TEAM_ROLE_ID), channel.guild.icon.url), view=TicketView(self.bot))
 
 
 def setup(bot):

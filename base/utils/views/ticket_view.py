@@ -1,41 +1,89 @@
 import discord
 import uuid
+
+from base.config import BotConfig
 from base.database import Database
-from base.utils.utilities import Utilities
 from base.utils.embeds.ticket_embed import EmbedTicket
+from base.utils.modals.ticket_modal import TicketReasonModal, TicketForwardModal
 from base.logger import Logger
+from base.utils.utilities import Utilities
 
 
-class TicketManager(discord.ui.View):
+class TicketManager:
+    def __init__(self, interaction):
+        self.interaction = interaction
+        self.logger = Logger(__name__).get_logger()
+        self.config = BotConfig()
+        self.database = Database()
+        self.utils = Utilities()
+
+class ConfirmClose(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None)
+        super().__init__()
         self.logger = Logger(__name__).get_logger()
         self.database = Database()
 
-    @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary)
-    async def close_ticket(self, button: discord.ui.Button, interaction: discord.Interaction):
-        ticket_uuid = await self.database.get_ticket_by_channel_id(interaction.channel.id)
-        ticket = await self.database.get_ticket(ticket_uuid[0])
+    @discord.ui.button(label="Ja ✅", style=discord.ButtonStyle.green)
+    async def confirm(self, _, interaction: discord.Interaction):
+        ticket = await self.database.get_ticket_by_channel_id(interaction.channel.id)
+        await interaction.channel.delete()
+        await self.database.remove_ticket(ticket[0])
 
-        if not ticket:
-            await interaction.response.send_message("Das Ticket konnte nicht gefunden werden.", ephemeral=True)
+
+    @discord.ui.button(label="Nein ❌", style=discord.ButtonStyle.red)
+    async def cancel(self, _, interaction: discord.Interaction):
+        await interaction.message.delete()
+
+
+class UserButton(discord.ui.View):
+    def __init__(self, bot: discord.Bot, member: discord.Member):
+        super().__init__(timeout=None)
+        self.bot = bot
+        self.config = BotConfig()
+        self.utils = Utilities()
+        self.logger = Logger(__name__).get_logger()
+        self.database = Database()
+        self.ticket_user = member
+
+    @discord.ui.button(label="Ticket übernehmen", style=discord.ButtonStyle.red, emoji="🔁")
+    async def take_over(self, _, interaction: discord.Interaction):
+        if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
+            await interaction.response.send_message(embed=EmbedTicket().ticket_claimed_embed(interaction.guild.icon.url), ephemeral=True)
             return
+        await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_claim(interaction.guild.icon.url), ephemeral=True)
 
-        if interaction.user.id != ticket[1]:
-            await interaction.response.send_message("Du kannst nur dein eigenes Ticket schließen.", ephemeral=True)
+
+    @discord.ui.button(label="Ticket zuweisen", style=discord.ButtonStyle.red, emoji="🔀")
+    async def forward(self, _, interaction: discord.Interaction):
+        if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
+            await interaction.response.send_modal(TicketForwardModal(interaction.guild))
             return
+        await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_forward(interaction.guild.icon.url), ephemeral=True)
 
-        try:
-            await interaction.channel.delete()
-            await self.database.remove_ticket(ticket_uuid[0])
-        except Exception as e:
-            self.logger.error(f"Fehler beim Schließen des Tickets: {e}")
-            await interaction.response.send_message("Ein Fehler ist beim Schließen des Tickets aufgetreten.", ephemeral=True)
+    @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary, emoji="🔒")
+    async def close_ticket(self, _, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            embed=EmbedTicket().ticket_confirm_close_embed(interaction.guild.icon.url),
+            view=ConfirmClose(), ephemeral=True
+        )
+
+    @discord.ui.button(label="Ticket schließen mit Grund", style=discord.ButtonStyle.secondary, emoji="📝")
+    async def close_ticket_reason(self, _, interaction: discord.Interaction):
+        await interaction.response.send_modal(TicketReasonModal())
+
+    @discord.ui.button(label="Transcript", style=discord.ButtonStyle.primary, emoji="📜")
+    async def transcript(self, _, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await self.utils.transcript(interaction, self.bot)
+
 
 class TicketDropdown(discord.ui.Select):
-    def __init__(self):
+    def __init__(self, bot: discord.Bot):
+        self.bot = bot
         self.logger = Logger(__name__).get_logger()
         self.database = Database()
+        self.utils = Utilities()
+        self.config = BotConfig()
 
         options = [
             discord.SelectOption(
@@ -61,6 +109,7 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(
                 label="Fraktionsanliegen",
                 description="Fragen oder Wünsche mit d/einer Fraktion",
+                emoji="🏴"
             ),
             discord.SelectOption(
                 label="Sonstiges",
@@ -79,9 +128,17 @@ class TicketDropdown(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_category = self.values[0]
 
+        if interaction.guild.get_role(self.config.DELTA_TEAM_ROLE_ID) in interaction.user.roles:
+            await interaction.response.send_message("Schon vergessen? Du bist im Team.", ephemeral=True)
+            return
+
         existing_ticket = await self.database.get_tickets(interaction.user.id)
+
         if existing_ticket:
-            await interaction.response.send_message("Du hast bereits ein Ticket erstellt.", ephemeral=True)
+            await interaction.response.send_message(
+                embed=EmbedTicket().ticket_already_open_embed(interaction.guild.icon.url),
+                ephemeral=True
+            )
             return
 
         category = discord.utils.get(interaction.guild.categories, name=selected_category)
@@ -93,10 +150,7 @@ class TicketDropdown(discord.ui.Select):
         ticket_channel = await interaction.guild.create_text_channel(
             name=f"ticket-{interaction.user.name}",
             category=category,
-            overwrites={
-                interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                interaction.user: discord.PermissionOverwrite(view_channel=True),
-            },
+            overwrites=self.utils.ticket_permission(interaction),
             topic=f"Ticket von {interaction.user.name} | Kategorie: {selected_category}",
         )
 
@@ -118,11 +172,14 @@ class TicketDropdown(discord.ui.Select):
             return
 
         try:
-            await ticket_channel.send(interaction.user.mention, embed=EmbedTicket().ticket_channel_embed(interaction.guild.icon.url, category), view=TicketManager())
+            await ticket_channel.send(interaction.user.mention,
+                                      embed=EmbedTicket().ticket_channel_embed(interaction.guild.icon.url, category),
+                                      view=UserButton(self.bot, interaction.user))
             await interaction.response.send_message(
                 embed=EmbedTicket().ticket_created_embed(ticket_channel, ticket_uuid),
                 ephemeral=True
             )
+
         except Exception as e:
             self.logger.error(f"Fehler beim Senden der Nachricht im Ticket-Kanal: {e}")
             await interaction.response.send_message(
@@ -132,6 +189,7 @@ class TicketDropdown(discord.ui.Select):
 
 
 class TicketView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot: discord.Bot):
         super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
+        self.bot = bot
+        self.add_item(TicketDropdown(self.bot))

@@ -1,0 +1,15 @@
+    async def forward(self, button: discord.ui.Button, interaction: discord.Interaction):
+        await interaction.response.send_message("Bitte nenne den Namen des Teamitglied Mitglieds, an das das Ticket weitergeleitet werden soll.", ephemeral = True)
+        try:
+            forward = await self.bot.wait_for("message", check = lambda m: m.author == interaction.user, timeout = 60.0)
+        except asyncio.TimeoutError:
+            return await interaction.followup.send("Du hast nicht rechtzeitig geantwortet.", ephemeral = True)
+
+        forward_member = discord.utils.get(interaction.guild.members, name = forward.content)
+        if not forward_member:
+            return await interaction.followup.send("Der Benutzer konnte nicht gefunden werden.", ephemeral = True)
+
+        await interaction.followup.send(f"Das Ticket wurde an {forward_member.mention} weitergeleitet.", ephemeral = True)
+        await forward_member.send(f"Du hast ein Ticket von {interaction.user.mention} erhalten. Bitte antworte auf dieses Ticket, um fortzufahren.")
+        await interaction.channel.set_permissions(forward_member, view_channel = True)
+        await interaction.channel.set_permissions(interaction.user, view_channel = False)
