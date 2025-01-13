@@ -59,7 +59,6 @@ class Utilities:
             print("Zeitüberschreitung beim Verbinden zum Server 🔴")
             return "🔴 Server ist offline"
         except Exception as e:
-            print(f"Unbekannter Fehler: {str(e)} 🔴")
             return "🔴 Server ist offline"
 
     def get_server_players_count(self) -> int | dict[str, str]:
@@ -73,7 +72,6 @@ class Utilities:
             response.raise_for_status()
 
             data = response.json()
-            self.logger.debug(f"JSON-Daten erfolgreich geladen: {data}")
 
             return len(data)
 
@@ -175,6 +173,76 @@ class Utilities:
         # Remove the transcript file after sending it
         os.remove(transcript_filename)
 
+    @staticmethod
+    async def dm_transcript(interaction: discord.Interaction, user: str) -> str:
+        transcript_filename = f"{interaction.channel.id}.md"
+
+        # Check if a transcript is already being generated
+        if os.path.exists(transcript_filename):
+            return await interaction.followup.send(f"A transcript is already being generated!", ephemeral=True)
+
+        # Open the file for writing the transcript
+        with open(transcript_filename, 'a') as f:
+            f.write(f"# Transcript of {interaction.channel.name}:\n")
+
+            # Iterate through the channel's message history
+            async for message in interaction.channel.history(limit=None, oldest_first=True):
+                created = datetime.strftime(message.created_at, "%m/%d/%Y at %H:%M:%S")
+
+                # Handle edited messages
+                if message.edited_at:
+                    edited = datetime.strftime(message.edited_at, "%m/%d/%Y at %H:%M:%S")
+                    f.write(f"{message.author} on {created}: {message.clean_content} (Edited at {edited})\n")
+                else:
+                    f.write(f"{message.author} on {created}: {message.clean_content}\n")
+
+                # Check if the message has attachments (files or images)
+                if message.attachments:
+                    for attachment in message.attachments:
+                        # Check if the attachment is an image or a file
+                        if attachment.content_type and attachment.content_type.startswith("image/"):
+                            f.write(f"  - Image: [Download {attachment.filename}]({attachment.url})\n")
+                        else:
+                            f.write(f"  - File: [Download {attachment.filename}]({attachment.url})\n")
+
+            # Add generation information to the transcript
+            generated = datetime.now().strftime("%m/%d/%Y at %H:%M:%S")
+            f.write(f"\n*Generated at {generated} by {user}*\n*Date Formatting: MM/DD/YY*\n*Time Zone: UTC*")
+
+        # Send the transcript as a file to the user
+        with open(transcript_filename, 'rb') as f:
+            await interaction.user.send(f"{interaction.user.mention} wie gewünscht. Das Transkript",file=discord.File(f, f"{interaction.channel.name}.md"))
+
+        # Remove the transcript file after sending it
+        os.remove(transcript_filename)
+
+
+
+    async def save_ticket_reasons(self, interaction: discord.Interaction, reason: str, ticket) -> None:
+
+        if not os.path.exists(self.config.TICKET_REASONS_PATH):
+            os.makedirs(self.config.TICKET_REASONS_PATH)
+
+        with open(self.config.TICKET_REASONS_PATH + f"{interaction.user.id}-{ticket[0][:6]}-ticket_reason.txt", "a") as file:
+            file.write(f"""
+Ticket Infos:
+Channel: {interaction.channel.name}
+User: {interaction.user.name} ({interaction.user.id})
+Time: {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}
+
+Ticket ID: {ticket[0]}
+Ticket Kategorie: {ticket[2]}
+
+Ticket Grund:
+---------------------------------------
+""" + reason + """
+---------------------------------------
+            """)
+
+    @staticmethod
+    async def delete_last_category(category: discord.CategoryChannel) -> None:
+            if len(category.channels) == 0:
+                await category.delete()
 
     def ticket_takeover_permission(self, interaction: discord.Interaction, ticket_user: discord.Member) -> dict:
         overwrites = {

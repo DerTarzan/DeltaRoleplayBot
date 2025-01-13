@@ -4,7 +4,7 @@ import uuid
 from base.config import BotConfig
 from base.database import Database
 from base.utils.embeds.ticket_embed import EmbedTicket
-from base.utils.modals.ticket_modal import TicketReasonModal, TicketForwardModal
+from base.utils.modals.ticket_modal import TicketReasonModal, TicketForwardModal, TicketRenameModal
 from base.logger import Logger
 from base.utils.utilities import Utilities
 
@@ -60,6 +60,13 @@ class UserButton(discord.ui.View):
             return
         await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_forward(interaction.guild.icon.url), ephemeral=True)
 
+    @discord.ui.button(label="Umbenennen", style=discord.ButtonStyle.red, emoji="📝")
+    async def rename(self, _, interaction: discord.Interaction):
+        if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
+            await interaction.response.send_modal(TicketRenameModal())
+            return
+        await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_rename(interaction.guild.icon.url), ephemeral=True)
+
     @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary, emoji="🔒")
     async def close_ticket(self, _, interaction: discord.Interaction):
         await interaction.response.send_message(
@@ -103,7 +110,7 @@ class TicketDropdown(discord.ui.Select):
             ),
             discord.SelectOption(
                 label="Entbannungsantrag",
-                description="Erstelle ein Ticket, um einen Entbannungsantrag zu stellen",
+                description="Erstelle ein Entbannungsantrag",
                 emoji="🔓"
             ),
             discord.SelectOption(
@@ -129,7 +136,7 @@ class TicketDropdown(discord.ui.Select):
         selected_category = self.values[0]
 
         if interaction.guild.get_role(self.config.DELTA_TEAM_ROLE_ID) in interaction.user.roles:
-            await interaction.response.send_message("Schon vergessen? Du bist im Team.", ephemeral=True)
+            await interaction.response.send_message(embed=EmbedTicket().ticket_in_team_embed(interaction.guild.icon.url), ephemeral=True)
             return
 
         existing_ticket = await self.database.get_tickets(interaction.user.id)
@@ -186,6 +193,10 @@ class TicketDropdown(discord.ui.Select):
                 "Dein Ticket wurde erstellt, aber eine Nachricht konnte nicht gesendet werden.",
                 ephemeral=True
             )
+
+        view = TicketView(self.bot)
+        await interaction.message.edit(view=view)
+        await interaction.delete_original_response(delay=3)
 
 
 class TicketView(discord.ui.View):

@@ -105,10 +105,28 @@ class EmbedTicket(EmbedsBase):
 
         return self.set_standard_footer_and_author(embed, icon)
 
-    def ticket_invalid_userid_embed(self, id: int, icon: str) -> discord.Embed:
+    def ticket_invalid_userid_embed(self, user_id: int, icon: str) -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket Weiterleitung",
-            description=f"Kein Benutzer mit der ID `{id}` konnte gefunden werden. Bitte überprüfe die User-ID.",
+            description=f"Kein Benutzer mit der ID `{user_id}` konnte gefunden werden. Bitte überprüfe die User-ID.",
+            color=self.ERROR_COLOR
+        )
+
+        return self.set_standard_footer_and_author(embed, icon)
+
+    def ticket_member_offline_embed(self, icon: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket Weiterleitung",
+            description="Der Benutzer ist offline.",
+            color=self.ERROR_COLOR
+        )
+
+        return self.set_standard_footer_and_author(embed, icon)
+
+    def ticket_no_team_role_embed(self, icon: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket Weiterleitung",
+            description="Der User ist nicht im Team.",
             color=self.ERROR_COLOR
         )
 
@@ -172,6 +190,33 @@ class EmbedTicket(EmbedsBase):
         embed = discord.Embed(
             title="🎫 Ticket Weiterleitung",
             description="Du hast keine Berechtigung dieses Ticket weiterzuleiten.",
+            color=self.ERROR_COLOR
+        )
+
+        return self.set_standard_footer_and_author(embed, icon)
+
+    def ticket_rename_embed(self,  icon: str, renamed: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket umbenennen",
+            description=f"Das Ticket wurde umbenannt. Zu: `{renamed}`",
+            color=self.INFO_COLOR
+        )
+
+        return self.set_standard_footer_and_author(embed, icon)
+
+    def ticket_no_perm_rename(self, icon: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket umbenennen",
+            description="Du hast keine Berechtigung dieses Ticket umzubenennen.",
+            color=self.ERROR_COLOR
+        )
+
+        return self.set_standard_footer_and_author(embed, icon)
+
+    def ticket_in_team_embed(self, icon: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket Anspruch",
+            description="Du bist bereits im Team.",
             color=self.ERROR_COLOR
         )
 

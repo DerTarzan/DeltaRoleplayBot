@@ -62,6 +62,10 @@ class BotConfig(BotConfigHandler):
         return self._get_env_var("DATABASE_PATH")
 
     @property
+    def TICKET_REASONS_PATH(self) -> str:
+        return self._get_env_var("TICKET_REASONS_PATH")
+
+    @property
     def WELCOME_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("WELCOME_CHANNEL_ID"))
 
@@ -76,6 +80,10 @@ class BotConfig(BotConfigHandler):
     @property
     def TICKET_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("TICKET_CHANNEL_ID"))
+
+    @property
+    def ID_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("ID_CHANNEL_ID"))
 
     @property
     def SUPPORT_WAITING_CHANNEL_ID(self) -> int:

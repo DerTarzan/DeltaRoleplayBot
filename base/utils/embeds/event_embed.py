@@ -40,3 +40,15 @@ class EmbedEvent(EmbedsBase):
 
 
         return self.set_standard_footer_and_author(embed, icon)
+
+    def kick_embed(self, member: discord.Member, reason: str, icon: str) -> discord.Embed:
+        embed = discord.Embed(
+            title="👢 Kick",
+            description=f"{member.mention} wurde gekickt.",
+            color=self.ERROR_COLOR
+        )
+        embed.set_thumbnail(url=member.avatar.url)
+
+        embed.add_field(name="Grund", value=reason, inline=False)
+
+        return self.set_standard_footer_and_author(embed, icon)
