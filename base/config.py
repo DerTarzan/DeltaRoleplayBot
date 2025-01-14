@@ -1,4 +1,5 @@
 import os
+import platform
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
@@ -16,7 +17,13 @@ class BotConfigHandler:
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, dev_mode=True):
+        self.DEV_MODE = dev_mode
+
+        if self.DEV_MODE is True:
+            if platform.system() == "Linux":
+                exit("❌ Development mode is not supported on Linux.")
+
         self.load_dotenvs()
 
     @staticmethod
@@ -26,16 +33,19 @@ class BotConfigHandler:
 
     def load_dotenvs(self) -> None:
         base_dir = Path(__file__).parent / "resources"
-        env_files = list(base_dir.glob("*.env"))
 
-        if not env_files:
-            raise ConfigError(f"Keine .env-Konfigurationsdateien im Verzeichnis {base_dir} gefunden.")
+        try:
+            if self.DEV_MODE:
+                self.load_dotenv_file(base_dir / "dev_config.env")
+                os.environ["DEV_MODE"] = "True"
+            else:
+                self.load_dotenv_file(base_dir / "config.env")
+                os.environ["DEV_MODE"] = "False"
 
-        for env_file in env_files:
-            try:
-                self.load_dotenv_file(env_file)
-            except Exception as e:
-                raise ConfigError(f"Fehler beim Laden der Konfigurationsdatei {env_file}: {e}")
+            self.load_dotenv_file(base_dir / "token.env")
+
+        except FileNotFoundError:
+            raise ConfigError("Konfigurationsdatei nicht gefunden")
 
 class BotConfig(BotConfigHandler):
     def __init__(self):
@@ -43,6 +53,8 @@ class BotConfig(BotConfigHandler):
 
     @property
     def TOKEN(self) -> str:
+        if self.DEV_MODE:
+            return self._get_env_var("DRP_DEVELOPER_BOT_TOKEN")
         return self._get_env_var("DISCORD_BOT_TOKEN")
 
     @property
@@ -76,6 +88,18 @@ class BotConfig(BotConfigHandler):
     @property
     def WELCOME_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("WELCOME_CHANNEL_ID"))
+
+    @property
+    def SERVER_STATUS_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("SERVER_STATUS_CHANNEL_ID"))
+
+    @property
+    def SERVER_RESTART_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("SERVER_RESTART_CHANNEL_ID"))
+
+    @property
+    def SERVER_MEMBERS_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("SERVER_TOTAL_MEMBERS_CHANNEL_ID"))
 
     @property
     def VERIFY_CHANNEL_ID(self) -> int:

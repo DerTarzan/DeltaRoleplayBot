@@ -14,7 +14,7 @@ class Manager:
         self.utils = Utilities()
 
     async def server_channel_status(self, bot: discord.Bot):
-        channel_status = bot.get_channel(1325841860777738341)
+        channel_status = bot.get_channel(self.config.SERVER_STATUS_CHANNEL_ID)
 
         guild = channel_status.guild
         owner = guild.owner
@@ -44,7 +44,7 @@ class Manager:
                 await asyncio.sleep(10)
 
     async def server_channel_restarter(self, bot: discord.Bot):
-        channel_restart = bot.get_channel(1325843361738788914)
+        channel_restart = bot.get_channel(self.config.SERVER_RESTART_CHANNEL_ID)
 
         guild = channel_restart.guild
         owner = guild.owner
@@ -79,9 +79,8 @@ class Manager:
                 logger.error(f"Error while editing channel: {e}")
                 await asyncio.sleep(10)
 
-    @staticmethod
-    async def server_channel_total_members(bot: discord.Bot):
-        channel_total_members = bot.get_channel(1325843641431756802)
+    async def server_channel_total_members(self, bot: discord.Bot):
+        channel_total_members = bot.get_channel(self.config.SERVER_MEMBERS_CHANNEL_ID)
 
         guild = channel_total_members.guild
         owner = guild.owner

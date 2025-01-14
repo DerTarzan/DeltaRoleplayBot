@@ -12,6 +12,7 @@ class EmbedsBase:
     def __init__(self):
         # Automatisch das aktuelle Jahr setzen
         self.year = datetime.now().year
+        self.now = datetime.now().strftime("%d.%m.%Y %H:%M")
 
     def set_standard_footer_and_author(self, embed: discord.Embed, icon_url: str = "") -> discord.Embed:
         if icon_url.startswith("http"):

@@ -40,7 +40,7 @@ class UserButton(discord.ui.View):
     async def take_over(self, _, interaction: discord.Interaction):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
             await interaction.response.send_message(embed=EmbedTicket().ticket_claimed(interaction.guild.icon.url), ephemeral=True)
-            await interaction.channel.set_permisison(self.utils.ticket_takeover_permission(interaction.user, self.ticket_user))
+            await interaction.channel.set_permissions(self.utils.ticket_takeover_permission(interaction.user, self.ticket_user))
             return
         await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_claim(interaction.guild.icon.url), ephemeral=True)
 

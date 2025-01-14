@@ -25,8 +25,9 @@ class Moderation(commands.Cog):
     async def clear_all(self, ctx: discord.ApplicationContext):
         await ctx.defer()
 
-        if ctx.author.id != 680480806686294067:
+        if ctx.author.id == 680480806686294067:
             await ctx.respond("Du hast keine Berechtigung, diesen Befehl auszuführen. Nur der Bot-Entwickler kann diesen Befehl ausführen.", ephemeral=True)
+            return
 
         total_deleted = 0
 

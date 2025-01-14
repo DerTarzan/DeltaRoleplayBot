@@ -22,4 +22,6 @@ class ChangelogEmbed(EmbedsBase):
                 changelog_str = "\n".join([f"{key}: {value}" for key, value in entries.items()])
                 embed.add_field(name=section, value=f"```{changelog_str}```", inline=False)
 
-        return self.set_standard_footer_and_author(embed)
+        embed.set_footer(text=f"DeltaRoleplayBot | © {self.now}")
+
+        return embed

@@ -1,5 +1,7 @@
 import os
 import asyncio
+import platform
+
 import discord
 
 from base.database import Database
@@ -44,6 +46,13 @@ class Bot(discord.Bot):
                 logger.error(f"❌ Invalid task: {coro} is not a coroutine.")
 
     async def on_ready(self) -> None:
+
+        if self.config.DEV_MODE:
+            logger.info("=" * 50)
+            logger.info("🚨 Running in Development Mode.")
+            if platform.system() == "Linux":
+                exit("❌ Development mode is not supported on Linux.")
+
         logger.info("=" * 50)
         logger.info(f"🤖 Bot Name      : {self.user.name}")
         logger.info(f"🆔 Bot ID        : {self.user.id}")
