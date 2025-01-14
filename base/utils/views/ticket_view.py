@@ -8,15 +8,6 @@ from base.utils.modals.ticket_modal import TicketReasonModal, TicketForwardModal
 from base.logger import Logger
 from base.utils.utilities import Utilities
 
-
-class TicketManager:
-    def __init__(self, interaction):
-        self.interaction = interaction
-        self.logger = Logger(__name__).get_logger()
-        self.config = BotConfig()
-        self.database = Database()
-        self.utils = Utilities()
-
 class ConfirmClose(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -48,7 +39,8 @@ class UserButton(discord.ui.View):
     @discord.ui.button(label="Ticket übernehmen", style=discord.ButtonStyle.red, emoji="🔁")
     async def take_over(self, _, interaction: discord.Interaction):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
-            await interaction.response.send_message(embed=EmbedTicket().ticket_claimed_embed(interaction.guild.icon.url), ephemeral=True)
+            await interaction.response.send_message(embed=EmbedTicket().ticket_claimed(interaction.guild.icon.url), ephemeral=True)
+            await interaction.channel.set_permisison(self.utils.ticket_takeover_permission(interaction.user, self.ticket_user))
             return
         await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_claim(interaction.guild.icon.url), ephemeral=True)
 
@@ -65,12 +57,12 @@ class UserButton(discord.ui.View):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
             await interaction.response.send_modal(TicketRenameModal())
             return
-        await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_rename(interaction.guild.icon.url), ephemeral=True)
+        await interaction.response.send_message(embed=EmbedTicket().no_permission_rename(interaction.guild.icon.url), ephemeral=True)
 
     @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary, emoji="🔒")
     async def close_ticket(self, _, interaction: discord.Interaction):
         await interaction.response.send_message(
-            embed=EmbedTicket().ticket_confirm_close_embed(interaction.guild.icon.url),
+            embed=EmbedTicket().confirm_ticket_close(interaction.guild.icon.url),
             view=ConfirmClose(), ephemeral=True
         )
 
@@ -116,7 +108,7 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(
                 label="Fraktionsanliegen",
                 description="Fragen oder Wünsche mit d/einer Fraktion",
-                emoji="🏴"
+                emoji="🏳️"
             ),
             discord.SelectOption(
                 label="Sonstiges",
@@ -136,14 +128,14 @@ class TicketDropdown(discord.ui.Select):
         selected_category = self.values[0]
 
         if interaction.guild.get_role(self.config.DELTA_TEAM_ROLE_ID) in interaction.user.roles:
-            await interaction.response.send_message(embed=EmbedTicket().ticket_in_team_embed(interaction.guild.icon.url), ephemeral=True)
+            await interaction.response.send_message(embed=EmbedTicket().already_in_team(interaction.guild.icon.url), ephemeral=True)
             return
 
         existing_ticket = await self.database.get_tickets(interaction.user.id)
 
         if existing_ticket:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_already_open_embed(interaction.guild.icon.url),
+                embed=EmbedTicket().ticket_already_open(interaction.guild.icon.url),
                 ephemeral=True
             )
             return
@@ -180,10 +172,12 @@ class TicketDropdown(discord.ui.Select):
 
         try:
             await ticket_channel.send(interaction.user.mention,
-                                      embed=EmbedTicket().ticket_channel_embed(interaction.guild.icon.url, category),
+                                      embed=EmbedTicket().ticket_channel_info(category, interaction.guild.icon.url),
                                       view=UserButton(self.bot, interaction.user))
+
+            ticket = await self.database.get_ticket_by_channel_id(ticket_channel.id)
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_created_embed(ticket_channel, ticket_uuid),
+                embed=EmbedTicket().ticket_created(ticket_channel, ticket),
                 ephemeral=True
             )
 
@@ -193,10 +187,11 @@ class TicketDropdown(discord.ui.Select):
                 "Dein Ticket wurde erstellt, aber eine Nachricht konnte nicht gesendet werden.",
                 ephemeral=True
             )
+            raise e
 
         view = TicketView(self.bot)
         await interaction.message.edit(view=view)
-        await interaction.delete_original_response(delay=3)
+        await interaction.delete_original_response(delay=10)
 
 
 class TicketView(discord.ui.View):

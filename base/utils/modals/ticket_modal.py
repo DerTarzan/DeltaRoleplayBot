@@ -24,7 +24,7 @@ class TicketReasonModal(discord.ui.Modal):
         name = interaction.user.name
         reason = self.reason.value
 
-        await interaction.response.send_message(embed=EmbedTicket().ticket_close_by_reason_embed(interaction.guild.icon.url, reason), ephemeral=True)
+        await interaction.response.send_message(embed=EmbedTicket().ticket_closed_with_reason(interaction.guild.icon.url, reason), ephemeral=True)
         await self.utils.dm_transcript(interaction, name)
         await interaction.channel.delete()
 
@@ -55,7 +55,7 @@ class TicketForwardModal(discord.ui.Modal):
             user_id = int(user_id)
         except ValueError:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_invalid_id_embed(interaction.guild.icon.url),
+                embed=EmbedTicket().invalid_user_id(user_id, interaction.guild.icon.url),
                 ephemeral=True
             )
             return
@@ -63,34 +63,34 @@ class TicketForwardModal(discord.ui.Modal):
         member = self.guild.get_member(user_id)
         if not member:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_invalid_userid_embed(user_id, interaction.guild.icon.url),
+                embed=EmbedTicket().invalid_user_id(user_id, interaction.guild.icon.url),
                 ephemeral=True
             )
             return
 
         if member.bot:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_invalid_userid_embed(user_id, interaction.guild.icon.url),
+                embed=EmbedTicket().invalid_user_id(user_id, interaction.guild.icon.url),
                 ephemeral=True
             )
             return
 
         if member.status == discord.Status.offline:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_member_offline_embed(interaction.guild.icon.url),
+                embed=EmbedTicket().user_offline(interaction.guild.icon.url),
                 ephemeral=True
             )
             return
 
         if member.guild.get_role(self.config.DELTA_TEAM_ROLE_ID) in member.roles:
             await interaction.response.send_message(
-                embed=EmbedTicket().ticket_no_team_role_embed(interaction.guild.icon.url),
+                embed=EmbedTicket().no_team_role(interaction.guild.icon.url),
                 ephemeral=True
             )
             return
 
         await interaction.response.send_message(
-            embed=EmbedTicket().ticket_forwarded_embed(interaction.guild.icon.url, member),
+            embed=EmbedTicket().ticket_forwarded(interaction.guild.icon.url, member),
             ephemeral=True
         )
 
@@ -109,4 +109,24 @@ class TicketRenameModal(discord.ui.Modal):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.channel.edit(name=self.new_name.value)
-        await interaction.response.send_message(embed=EmbedTicket().ticket_rename_embed(interaction.guild.icon.url, self.new_name.value), ephemeral=True)
+        await interaction.response.send_message(embed=EmbedTicket().ticket_renamed(self.new_name.value, interaction.guild.icon.url), ephemeral=True)
+
+class TicketSystemCloseModal(discord.ui.Modal):
+    def __init__(self, bot: discord.Bot):
+        self.config = BotConfig()
+        self.bot = bot
+        super().__init__(title="Ticket schließen", timeout=60)
+
+        self.reason = discord.ui.InputText(
+            label="Grund",
+            placeholder="Bitte gebe einen Grund für das Schließen des TicketSystem an",
+            required=True,
+            max_length=200
+        )
+        self.add_item(self.reason)
+
+    async def callback(self, interaction: discord.Interaction):
+        channel = self.bot.get_channel(self.config.TICKET_CHANNEL_ID)
+        await channel.purge(limit=1)
+        await channel.send(embed=EmbedTicket().ticket_disabled(self.reason.value, interaction.guild.icon.url))
+        await interaction.response.send_message("Das Ticket-System wurde erfolgreich deaktiviert.", ephemeral=True)

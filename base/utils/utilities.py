@@ -262,3 +262,13 @@ Ticket Grund:
             interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True, read_message_history=True, attach_files=True)
         }
         return overwrites
+
+
+    def load_changelog(self) -> dict:
+        if not os.path.exists(self.config.CHANGELOG_PATH):
+            raise FileNotFoundError("Changelog-Datei nicht gefunden")
+
+        with open(self.config.CHANGELOG_PATH, "r") as file:
+            return json.load(file)
+
+

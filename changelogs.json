@@ -1,0 +1,25 @@
+{
+    "Hinzugefügt": {
+        "FuelScript": "Wir haben ein neues FuelScript hinzugefügt",
+        "Anticheat": "Wir haben ein neues Anticheat hinzugefügt"
+    },
+    "Verbesserungen": {
+        "FuelScript": "Wir haben das FuelScript verbessert"
+    },
+    "Fehlerbehebungen": {
+        "FuelScript": "Wir haben Fehler im FuelScript behoben"
+    },
+    "Entfernt": {
+        "Jobs": "Wir haben Jobs entfernt"
+    },
+    "Sonstiges": {
+        "MLO": "MLO's wurden geändert",
+        "DiscordBot": "Wir haben einen neuen DiscordBot hinzugefügt"
+    },
+    "Bekannte Probleme": {
+        "FuelScript": "Es gibt Probleme mit dem FuelScript"
+    },
+    "Danksagungen": {
+        "FuelScript": "Danke an alle die am FuelScript gearbeitet haben"
+    }
+}

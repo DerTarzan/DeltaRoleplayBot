@@ -66,6 +66,14 @@ class BotConfig(BotConfigHandler):
         return self._get_env_var("TICKET_REASONS_PATH")
 
     @property
+    def ASSETS_PATH(self) -> str:
+        return self._get_env_var("ASSETS_PATH")
+
+    @property
+    def CHANGELOG_PATH(self) -> str:
+        return self._get_env_var("CHANGELOG_PATH")
+
+    @property
     def WELCOME_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("WELCOME_CHANNEL_ID"))
 
@@ -88,6 +96,10 @@ class BotConfig(BotConfigHandler):
     @property
     def SUPPORT_WAITING_CHANNEL_ID(self) -> int:
         return int(self._get_env_var("SUPPORT_WAITING_CHANNEL_ID"))
+
+    @property
+    def INFO_CHANNEL_ID(self) -> int:
+        return int(self._get_env_var("INFO_CHANNEL_ID"))
 
     @property
     def DELTA_TEAM_ROLE_ID(self) -> int:

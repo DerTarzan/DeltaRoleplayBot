@@ -6,218 +6,199 @@ class EmbedTicket(EmbedsBase):
     def __init__(self):
         super().__init__()
 
-    def ticket_embed(self, guild: discord.Guild, team: discord.Role , icon: str, ) -> discord.Embed:
+    def create_ticket_embed(self, guild: discord.Guild, team_role: discord.Role) -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket erstellen",
-            description="Bitte wähle eine Kategorie aus, um ein Ticket zu erstellen",
+            description="Bitte wähle eine Kategorie aus, um ein Ticket zu erstellen:",
             color=self.INFO_COLOR
+        )
+        embed.add_field(
+            name=f"Willkommen beim Ticket-Support von {guild.name}",
+            value=f"""
+            **Kategorien:**
+            > ❓ Allgemein
+            > 📝 Team Bewerbung
+            > 🔧 Technischer Support
+            > 🔓 Entbannungsantrag
+            > 🏳️ Fraktionsanliegen
+            > 🔗 Sonstiges
+            
+            Das {team_role.mention} wird sich so schnell wie möglich um dein Anliegen kümmern.
+            """,
+            inline=False
+        )
+        return self.set_standard_footer_and_author(embed, guild.icon.url)
+
+    def ticket_disabled(self, reason: str ,icon_url: str = "") -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket-System deaktiviert",
+            description="Das Ticket-System wurde vorübergehend deaktiviert.",
+            color=self.WARNING_COLOR
         )
 
         embed.add_field(
-            name=f"Willkommen beim TicketSupport von {guild.name}",
-            value=f"""
-            
-            **Kategorien:**
-            > Allgemein
-            > Team Bewerbung
-            > Technischer Support
-            > Entbannungsantrag
-            > Fraktionsanliegen
-            > Sonstiges
-            
-            Das {team.mention} wird sich so schnell wie möglich um dein Anliegen kümmern.
-            
-            """
+            name="Grund:",
+            value=reason,
+            inline=False
         )
 
-        return self.set_standard_footer_and_author(embed, icon)
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-    def ticket_created_embed(self, channel: discord.TextChannel, ticket_uuid: str) -> discord.Embed:
+    def ticket_created(self, channel: discord.TextChannel, ticket) -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket erstellt",
-            description="Dein Ticket wurde erfolgreich erstellt",
+            description="Dein Ticket wurde erfolgreich erstellt.",
             color=self.INFO_COLOR
         )
-
         embed.add_field(
-            name="🔗 Ticket Link",
-            value=f"channel: {channel.mention}\nTicket ID: {ticket_uuid}"
+            name="🔗 Ticket Informationen",
+            value=(
+                f"Kanal: {channel.mention}\n"
+                f"Ticket Kategorie: {str(ticket[2])}\n"
+                f"Ticket ID: `{ticket[0]}`"
+            ),
+            inline=False
         )
-
+        # Standard-Footer und -Author hinzufügen
         return self.set_standard_footer_and_author(embed, channel.guild.icon.url)
 
-    def ticket_channel_embed(self, icon: str, category: discord.Option) -> discord.Embed:
+    def ticket_channel_info(self, category: discord.CategoryChannel, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket Kanal",
-            description=f"Du hast ein Ticket erstellt: {category.name}",
+            description=f"Du hast ein Ticket in der Kategorie `{category.name}` erstellt.",
             color=self.INFO_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_already_open_embed(self, icon: str) -> discord.Embed:
+    def ticket_already_open(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket bereits offen",
-            description="Du hast bereits ein Ticket offen.",
-            color=self.ERROR_COLOR
+            title="🎫 Ticket bereits geöffnet",
+            description="Du hast bereits ein offenes Ticket.",
+            color=self.WARNING_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_confirm_close_embed(self, icon: str) -> discord.Embed:
+    def confirm_ticket_close(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket schließen",
             description="Möchtest du das Ticket wirklich schließen?",
             color=self.INFO_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_close_embed(self, icon: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket schließen",
-            description="Das Ticket wurde geschlossen.",
-            color=self.INFO_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_close_by_reason_embed(self, icon: str,reason: str) -> discord.Embed:
+    def ticket_closed(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket geschlossen",
-            description=f"Das Ticket wurde geschlossen.",
+            description="Das Ticket wurde erfolgreich geschlossen.",
             color=self.INFO_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
+    def ticket_closed_with_reason(self, reason: str, icon_url: str = "") -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Ticket geschlossen",
+            description="Das Ticket wurde erfolgreich geschlossen.",
+            color=self.INFO_COLOR
+        )
         embed.add_field(
-            name="Grund",
-            value=reason
+            name="Grund:",
+            value=reason,
+            inline=False
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_invalid_id_embed(self, icon: str) -> discord.Embed:
+    def invalid_user_id(self, user_id: int, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket Weiterleitung",
-            description="Die eingegebene User-ID ist ungültig.",
+            title="🎫 Ungültige Benutzer-ID",
+            description=f"Es wurde kein Benutzer mit der ID `{user_id}` gefunden. Bitte überprüfe die ID.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_invalid_userid_embed(self, user_id: int, icon: str) -> discord.Embed:
+    def user_offline(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket Weiterleitung",
-            description=f"Kein Benutzer mit der ID `{user_id}` konnte gefunden werden. Bitte überprüfe die User-ID.",
+            title="🎫 Benutzer offline",
+            description="Der angegebene Benutzer ist derzeit offline und kann nicht kontaktiert werden.",
+            color=self.WARNING_COLOR
+        )
+        return self.set_standard_footer_and_author(embed, icon_url)
+
+    def no_team_role(self, icon_url: str = "") -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Keine Teamrolle",
+            description="Der angegebene Benutzer ist kein Mitglied des Teams.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_member_offline_embed(self, icon: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket Weiterleitung",
-            description="Der Benutzer ist offline.",
-            color=self.ERROR_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_no_team_role_embed(self, icon: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket Weiterleitung",
-            description="Der User ist nicht im Team.",
-            color=self.ERROR_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_forwarded_embed(self, icon: str, user: discord.User) -> discord.Embed:
+    def ticket_forwarded(self, user: discord.User, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket weitergeleitet",
             description=f"Das Ticket wurde erfolgreich an {user.mention} weitergeleitet.",
             color=self.INFO_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_cannot_close_embed(self, icon: str) -> discord.Embed:
+    def ticket_no_perm_forward(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket schließen",
-            description="Du kannst das Ticket nicht schließen.",
+            title="🎫 Keine Berechtigung",
+            description="Du hast keine Berechtigung, dieses Ticket weiterzuleiten.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_closed_error_embed(self, icon: str) -> discord.Embed:
+    def no_permission_close(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket schließen",
-            description="Das Ticket konnte nicht geschlossen werden. Es ist ein fehler aufgetreten.",
+            title="🎫 Keine Berechtigung",
+            description="Du hast keine Berechtigung, dieses Ticket zu schließen.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_claimed_embed(self, icon: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket Anspruch",
-            description="Du hast dieses Ticket übernommen.",
-            color=self.ERROR_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_not_found_embed(self, icon: str) -> discord.Embed:
+    def ticket_not_found(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🎫 Ticket nicht gefunden",
             description="Das Ticket konnte nicht gefunden werden.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_no_perm_claim(self, icon: str) -> discord.Embed:
+    def ticket_claimed(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket Anspruch",
-            description="Du hast keine Berechtigung dieses Ticket zu übernehmen.",
-            color=self.ERROR_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_no_perm_forward(self, icon: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket Weiterleitung",
-            description="Du hast keine Berechtigung dieses Ticket weiterzuleiten.",
-            color=self.ERROR_COLOR
-        )
-
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_rename_embed(self,  icon: str, renamed: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="🎫 Ticket umbenennen",
-            description=f"Das Ticket wurde umbenannt. Zu: `{renamed}`",
+            title="🎫 Ticket beansprucht",
+            description="Das Ticket wurde erfolgreich von dir beansprucht.",
             color=self.INFO_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_no_perm_rename(self, icon: str) -> discord.Embed:
+    def ticket_no_perm_claim(self, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket umbenennen",
-            description="Du hast keine Berechtigung dieses Ticket umzubenennen.",
+            title="🎫 Keine Berechtigung",
+            description="Du hast keine Berechtigung, dieses Ticket zu beanspruchen.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
-
-    def ticket_in_team_embed(self, icon: str) -> discord.Embed:
+    def ticket_renamed(self, new_name: str, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
-            title="🎫 Ticket Anspruch",
-            description="Du bist bereits im Team.",
+            title="🎫 Ticket umbenannt",
+            description=f"Das Ticket wurde erfolgreich in `{new_name}` umbenannt.",
+            color=self.INFO_COLOR
+        )
+        return self.set_standard_footer_and_author(embed, icon_url)
+
+    def no_permission_rename(self, icon_url: str = "") -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Keine Berechtigung",
+            description="Du hast keine Berechtigung, dieses Ticket umzubenennen.",
             color=self.ERROR_COLOR
         )
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-        return self.set_standard_footer_and_author(embed, icon)
+    def already_in_team(self, icon_url: str = "") -> discord.Embed:
+        embed = discord.Embed(
+            title="🎫 Bereits im Team",
+            description="Du bist bereits Mitglied des Teams und kannst keine weiteren Teamrollen übernehmen.",
+            color=self.WARNING_COLOR
+        )
+        return self.set_standard_footer_and_author(embed, icon_url)

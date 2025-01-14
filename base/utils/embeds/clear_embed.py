@@ -7,7 +7,7 @@ class EmbedClear(EmbedsBase):
     def __init__(self):
         super().__init__()
 
-    def clear_embed(self, amount: int, icon: str) -> discord.Embed:
+    def clear_embed(self, amount: int, icon_url: str = "") -> discord.Embed:
         title = "🗑️ Nachricht gelöscht" if amount == 1 else "🗑️ Nachrichten gelöscht"
         description = (
             f"Es wurde {amount} Nachricht gelöscht"
@@ -20,21 +20,21 @@ class EmbedClear(EmbedsBase):
             description=description,
             color=self.INFO_COLOR
         )
-        return self.set_standard_footer_and_author(embed, icon)
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-    def clear_all_embed(self, amount: int, icon: str) -> discord.Embed:
+    def clear_all_embed(self, amount: int, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="🗑️ Es wurden alle Narichten gelöscht",
             description=f"Es wurden {amount} Narichten gelöscht",
             color=self.INFO_COLOR
         )
-        return self.set_standard_footer_and_author(embed, icon)
+        return self.set_standard_footer_and_author(embed, icon_url)
 
-    def clear_error_embed(self, error , icon: str) -> discord.Embed:
+    def clear_error_embed(self, error, icon_url: str = "") -> discord.Embed:
         embed = discord.Embed(
             title="❌ Fehler",
             description="Es ist ein Fehler aufgetreten",
             color=self.ERROR_COLOR
         )
         embed.add_field(name="⚠️ Fehlermeldung", value=error)
-        return self.set_standard_footer_and_author(embed, icon)
+        return self.set_standard_footer_and_author(embed, icon_url)

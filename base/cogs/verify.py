@@ -18,7 +18,7 @@ class VerifySystem(commands.Cog):
         channel = self.bot.get_channel(self.config.VERIFY_CHANNEL_ID)
         rule_channel = self.bot.get_channel(self.config.RULES_CHANNEL_ID)
         await channel.purge(limit=1)
-        await channel.send(embed=EmbedVerify().verify_embed(rule_channel, self.bot.guilds[0].icon.url), view=VerifyButton(self.bot))
+        await channel.send(embed=EmbedVerify().verify_embed(rule_channel), view=VerifyButton(self.bot))
 
 
 
