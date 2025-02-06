@@ -17,7 +17,7 @@ class BotConfigHandler:
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
-    def __init__(self, dev_mode=True):
+    def __init__(self, dev_mode=False):
         self.DEV_MODE = dev_mode
 
         if self.DEV_MODE is True:
@@ -80,6 +80,10 @@ class BotConfig(BotConfigHandler):
     @property
     def ASSETS_PATH(self) -> str:
         return self._get_env_var("ASSETS_PATH")
+
+    @property
+    def DATA_PATH(self) -> str:
+        return self._get_env_var("DATA_PATH")
 
     @property
     def CHANGELOG_PATH(self) -> str:

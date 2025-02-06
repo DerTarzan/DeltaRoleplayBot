@@ -1,4 +1,8 @@
+import asyncio
+import datetime
 import os
+from datetime import timedelta
+
 import aiosqlite
 from typing import List, Optional, Tuple
 from contextlib import asynccontextmanager
@@ -19,7 +23,6 @@ class DatabaseConnectionHandler:
 
         if os.path.exists(self.db):
             self.logger.debug(f"Database already exists at: {self.db}")
-            return
 
         await self.create_connection()
         try:
@@ -47,7 +50,16 @@ class DatabaseConnectionHandler:
                     """
                 )
 
-
+                await cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS checkouts (
+                        user_id INTEGER,
+                        reason TEXT NOT NULL,
+                        duration TEXT NOT NULL
+                    )
+                    """
+                )
+                
                 await self.connection.commit()
                 self.logger.debug("Database created successfully")
 
@@ -85,6 +97,37 @@ class DatabaseConnectionHandler:
                 self.logger.debug(f"No connection to close: {self.db}")
         except aiosqlite.Error as e:
             self.logger.error("Error closing connection", exc_info=e)
+
+    async def schedule_backup(self):
+        while True:
+            now = datetime.datetime.now()
+            midnight = datetime.datetime.combine(now.date() + timedelta(days=1), datetime.time.min)
+            seconds_until_midnight = (midnight - now).total_seconds()
+
+            if seconds_until_midnight > 3600:
+                self.logger.debug(f"Backing up database in {seconds_until_midnight / 3600:.2f} hours")
+            elif seconds_until_midnight > 60:
+                self.logger.debug(f"Backing up database in {seconds_until_midnight / 60:.1f} minutes")
+            else:
+                self.logger.debug(f"Backing up database in {seconds_until_midnight:.0f} seconds")
+
+            # In 60-Sekunden-Intervallen schlafen, um Zeitverschiebungen zu berücksichtigen
+            while seconds_until_midnight > 0:
+                sleep_time = min(60, seconds_until_midnight)
+                await asyncio.sleep(sleep_time)
+                now = datetime.datetime.now()
+                seconds_until_midnight = (midnight - now).total_seconds()
+
+    async def backup_database(self):
+        backup_file = f"{self.db}.backup"
+        try:
+            self.logger.debug(f"Backing up database to {backup_file}")
+            async with aiosqlite.connect(self.db) as source_conn:
+                async with aiosqlite.connect(backup_file) as backup_conn:
+                    await source_conn.backup(backup_conn)
+            self.logger.debug("Database backup successful")
+        except aiosqlite.Error as e:
+            self.logger.error("Error while backing up database", exc_info=e)
 
 class Database(DatabaseConnectionHandler):
     def __init__(self) -> None:
@@ -281,3 +324,80 @@ class Database(DatabaseConnectionHandler):
                 except aiosqlite.Error as e:
                     self.db_logger.error("Error getting ticket from database", exc_info=e)
                     return None
+
+    async def add_checkout(self, user_id: int, reason: str, duration: datetime.datetime):
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        INSERT INTO checkouts (user_id, reason, duration)
+                        VALUES (?, ?, ?)
+                        """,
+                        (user_id, reason, duration)
+                    )
+                    await connection.commit()
+                    self.db_logger.debug(f"Checkout {user_id} added to database")
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error adding checkout to database", exc_info=e)
+
+    async def get_checkout(self, user_id: int) -> Optional[Tuple[int, str, datetime.datetime]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM checkouts WHERE user_id = ?
+                        """,
+                        (user_id,)
+                    )
+                    checkout = await cursor.fetchone()
+                    return checkout
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting checkout from database", exc_info=e)
+                    return None
+
+    async def remove_checkout(self, user_id: int) -> None:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        DELETE FROM checkouts WHERE user_id = ?
+                        """,
+                        (user_id,)
+                    )
+                    await connection.commit()
+                    self.db_logger.debug(f"Checkout {user_id} removed from database")
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error removing checkout from database", exc_info=e)
+
+    async def get_checkouts(self) -> List[Tuple[int, str, datetime.datetime]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM checkouts
+                        """
+                    )
+                    checkouts = await cursor.fetchall()
+                    return checkouts
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting checkouts from database", exc_info=e)
+                    return []
+
+    async def get_expired_checkouts(self) -> List[Tuple[int, str, datetime.datetime]]:
+        async with self.get_db_connection() as connection:
+            async with connection.cursor() as cursor:
+                try:
+                    await cursor.execute(
+                        """
+                        SELECT * FROM checkouts WHERE duration <= datetime('now')
+                        """
+                    )
+                    expired_checkouts = await cursor.fetchall()
+                    return expired_checkouts
+                except aiosqlite.Error as e:
+                    self.db_logger.error("Error getting expired checkouts from database", exc_info=e)
+                    return []

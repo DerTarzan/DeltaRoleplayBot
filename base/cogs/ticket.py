@@ -22,7 +22,6 @@ class TicketSystem(commands.Cog):
         await channel.purge(limit=1)
         await channel.send(embed=EmbedTicket().create_ticket_embed(channel.guild, channel.guild.get_role(self.config.DELTA_TEAM_ROLE_ID)), view=TicketView(self.bot))
 
-
     @slash_command(name="disable-ticket", description="Deaktiviere das Ticket-System")
     async def disable_ticket(self, ctx: discord.ApplicationContext):
         if not ctx.author.guild_permissions.administrator:

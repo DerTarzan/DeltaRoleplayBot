@@ -77,10 +77,10 @@ class Utilities:
 
         except requests.exceptions.RequestException as e:
             self.logger.error(f"❌ Fehler beim Abrufen der Daten: {e}")
-            return {"error": "Fehler beim Abrufen der Daten"}
+            return "N/A (Fehler beim Abrufen der Daten)"
         except ValueError as e:
             self.logger.error(f"❌ Fehler beim Verarbeiten der JSON-Daten: {e}")
-            return {"error": "Fehler beim Verarbeiten der Daten"}
+            return "N/A (Fehler beim Verarbeiten der Daten)"
 
     def server_players(self) -> str:
         player_count = self.get_server_players_count()
@@ -97,7 +97,7 @@ class Utilities:
 
         if os.path.exists(config):
             try:
-                with open(config, "r") as file:
+                with open(config, "r", encoding="utf-8") as file:
                     return json.load(file)
             except json.JSONDecodeError:
                 print("Fehler: Die Config-Datei ist keine gültige JSON-Datei.")
@@ -270,5 +270,4 @@ Ticket Grund:
 
         with open(self.config.CHANGELOG_PATH, "r") as file:
             return json.load(file)
-
 

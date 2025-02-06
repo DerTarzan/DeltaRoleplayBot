@@ -90,7 +90,7 @@ class TicketForwardModal(discord.ui.Modal):
             return
 
         await interaction.response.send_message(
-            embed=EmbedTicket().ticket_forwarded(interaction.guild.icon.url, member),
+            embed=EmbedTicket().ticket_forwarded(member, interaction.guild.icon.url),
             ephemeral=True
         )
 

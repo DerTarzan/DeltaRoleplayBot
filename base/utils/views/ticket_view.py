@@ -36,7 +36,7 @@ class UserButton(discord.ui.View):
         self.database = Database()
         self.ticket_user = member
 
-    @discord.ui.button(label="Ticket übernehmen", style=discord.ButtonStyle.red, emoji="🔁")
+    @discord.ui.button(label="Ticket übernehmen", style=discord.ButtonStyle.red, emoji="🔁", custom_id="take_over")
     async def take_over(self, _, interaction: discord.Interaction):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
             await interaction.response.send_message(embed=EmbedTicket().ticket_claimed(interaction.guild.icon.url), ephemeral=True)
@@ -44,33 +44,32 @@ class UserButton(discord.ui.View):
             return
         await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_claim(interaction.guild.icon.url), ephemeral=True)
 
-
-    @discord.ui.button(label="Ticket zuweisen", style=discord.ButtonStyle.red, emoji="🔀")
+    @discord.ui.button(label="Ticket zuweisen", style=discord.ButtonStyle.red, emoji="🔀", custom_id="assign_ticket")
     async def forward(self, _, interaction: discord.Interaction):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
             await interaction.response.send_modal(TicketForwardModal(interaction.guild))
             return
         await interaction.response.send_message(embed=EmbedTicket().ticket_no_perm_forward(interaction.guild.icon.url), ephemeral=True)
 
-    @discord.ui.button(label="Umbenennen", style=discord.ButtonStyle.red, emoji="📝")
+    @discord.ui.button(label="Umbenennen", style=discord.ButtonStyle.red, emoji="📝", custom_id="rename_ticket")
     async def rename(self, _, interaction: discord.Interaction):
         if self.utils.check_user_has_role(interaction.user, self.config.DELTA_TEAM_ROLE_ID):
             await interaction.response.send_modal(TicketRenameModal())
             return
         await interaction.response.send_message(embed=EmbedTicket().no_permission_rename(interaction.guild.icon.url), ephemeral=True)
 
-    @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary, emoji="🔒")
+    @discord.ui.button(label="Ticket schließen", style=discord.ButtonStyle.primary, emoji="🔒", custom_id="close_ticket")
     async def close_ticket(self, _, interaction: discord.Interaction):
         await interaction.response.send_message(
             embed=EmbedTicket().confirm_ticket_close(interaction.guild.icon.url),
             view=ConfirmClose(), ephemeral=True
         )
 
-    @discord.ui.button(label="Ticket schließen mit Grund", style=discord.ButtonStyle.secondary, emoji="📝")
+    @discord.ui.button(label="Ticket schließen mit Grund", style=discord.ButtonStyle.secondary, emoji="📝", custom_id="close_ticket_reason")
     async def close_ticket_reason(self, _, interaction: discord.Interaction):
         await interaction.response.send_modal(TicketReasonModal())
 
-    @discord.ui.button(label="Transcript", style=discord.ButtonStyle.primary, emoji="📜")
+    @discord.ui.button(label="Transcript", style=discord.ButtonStyle.primary, emoji="📜", custom_id="transcript")
     async def transcript(self, _, interaction: discord.Interaction):
         await interaction.response.defer()
         await self.utils.transcript(interaction, self.bot)
@@ -110,11 +109,19 @@ class TicketDropdown(discord.ui.Select):
                 description="Fragen oder Wünsche mit d/einer Fraktion",
                 emoji="🏳️"
             ),
+
+            discord.SelectOption(
+                label="Multi-Character Antrag",
+                description="Erstelle ein Multi-Character Antrag",
+                emoji="👥"
+            ),
+
             discord.SelectOption(
                 label="Sonstiges",
                 description="Alles, was nicht in die anderen Kategorien passt",
                 emoji="🔗"
             ),
+
         ]
 
         super().__init__(
@@ -122,6 +129,7 @@ class TicketDropdown(discord.ui.Select):
             min_values=1,
             max_values=1,
             options=options,
+            custom_id="ticket_dropdown"
         )
 
     async def callback(self, interaction: discord.Interaction):

@@ -20,8 +20,5 @@ class VerifySystem(commands.Cog):
         await channel.purge(limit=1)
         await channel.send(embed=EmbedVerify().verify_embed(rule_channel), view=VerifyButton(self.bot))
 
-
-
-
 def setup(bot):
     bot.add_cog(VerifySystem(bot))

@@ -33,7 +33,7 @@ class EmbedEvent(EmbedsBase):
             name="📌 **Wichtige Hinweise**",
             value=(
                 "• Halte dich bitte an die [Discord TOS](https://discord.com/terms). \n"
-                "• Lese dir das komplette Regelwerk durch: [Regelwerk lesen](http://176.96.138.31/routes/regelwerk.html).\n"
+                "• Lese dir das komplette Regelwerk durch: [Regelwerk lesen](https://deltaroleplay.de/routes/regelwerk.html).\n"
             ),
             inline=False
         )

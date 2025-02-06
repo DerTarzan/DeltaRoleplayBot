@@ -9,6 +9,7 @@ from base.logger import Logger
 from base.config import BotConfig
 from base.utils.manager import Manager
 from base.utils.utilities import Utilities
+from base.utils.views.ticket_view import TicketView, UserButton, TicketDropdown
 
 logger = Logger(__name__).get_logger()
 
@@ -48,10 +49,17 @@ class Bot(discord.Bot):
     async def on_ready(self) -> None:
 
         if self.config.DEV_MODE:
-            logger.info("=" * 50)
-            logger.info("🚨 Running in Development Mode.")
+            if platform.system() == "Windows":
+                logger.info("=" * 50)
+                logger.info("🚀 Running in Development Mode on Windows.")
+            else:
+                exit("❌ Development mode is only supported on Windows.")
+        else:
             if platform.system() == "Linux":
-                exit("❌ Development mode is not supported on Linux.")
+                logger.info("=" * 50)
+                logger.info("✅ Running in Production Mode on Linux.")
+            else:
+                exit("❌ Production mode is only supported on Linux.")
 
         logger.info("=" * 50)
         logger.info(f"🤖 Bot Name      : {self.user.name}")
@@ -70,12 +78,14 @@ class Bot(discord.Bot):
         self.create_coroutine_task(
             self.presence(),
             self.database.create_database(),
+            self.database.schedule_backup(),
             self.manger.server_channel_total_members(self),
             self.manger.server_channel_restarter(self),
             self.manger.server_channel_status(self)
         )
 
         logger.info("-" * 50)
+
         logger.info("Delta Roleplay Bot is now online. 🚀")
 
     async def presence(self) -> None:

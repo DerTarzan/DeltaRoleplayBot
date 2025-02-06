@@ -1,17 +1,21 @@
 import os
 
 import discord
+from discord import Button
 from discord.ext import commands
 from discord.commands import slash_command
 from discord.ext.bridge import has_permissions
+from discord.ui import View
 
 from base.config import BotConfig
+from base.database import Database
 from base.utils.embeds.clear_embed import EmbedClear
 
 
 class Moderation(commands.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
+        self.database = Database()
         self.config = BotConfig()
 
     @slash_command(name="clear", description="Löscht eine bestimmte Anzahl von Nachrichten")
@@ -25,9 +29,10 @@ class Moderation(commands.Cog):
     async def clear_all(self, ctx: discord.ApplicationContext):
         await ctx.defer()
 
-        if ctx.author.id == 680480806686294067:
-            await ctx.respond("Du hast keine Berechtigung, diesen Befehl auszuführen. Nur der Bot-Entwickler kann diesen Befehl ausführen.", ephemeral=True)
+        if self.config.DEV_MODE:
+            await ctx.respond("Dieser Befehl ist nur für den DEV_MODUS", ephemeral=True)
             return
+
 
         total_deleted = 0
 
@@ -39,6 +44,18 @@ class Moderation(commands.Cog):
                 await ctx.respond(f"Es ist ein Fehler aufgetreten : {e}")
 
         await ctx.respond(embed=EmbedClear().clear_all_embed(total_deleted, ctx.guild.icon.url), ephemeral=True)
+
+    @slash_command(name="add_users", description="Fügt alle Mitglieder zur Datenbank hinzu")
+    @has_permissions(administrator=True)
+    async def add_users(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+
+        for member in ctx.guild.members:
+            if member.bot:
+                continue
+            await self.database.add_user(member.id, member.name, member.discriminator)
+
+        await ctx.respond("Alle Mitglieder wurden zur Datenbank hinzugefügt", ephemeral=True)
 
     @clear.error
     async def clear_error(self, ctx: discord.ApplicationContext, error):
